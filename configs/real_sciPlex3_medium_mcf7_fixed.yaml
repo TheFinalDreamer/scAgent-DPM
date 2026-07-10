@@ -1,0 +1,86 @@
+# scAgent-DPM: sci-Plex3 MCF7 Medium — FIXED
+# MT gene detection fix + gene_symbol mapping applied (2026-06-10)
+# Single-cell-line perturbation pipeline validation
+# NOT multi-cell-type — NOT foundation model annotation — NOT dynamics
+
+pipeline:
+  name: "scAgent-DPM-sciplex3-medium-mcf7-fixed"
+  description: "FIXED Medium: MCF7, 12 drugs + Vehicle, MT detection via gene_short_name fallback, per-drug DEG with gene symbols"
+
+input_path: "/data/sc/scAgent_DPM/data/processed/sciplex3/sciplex3_medium_mcf7.h5ad"
+output_dir: "/data/sc/scAgent_DPM/results/real_experiments/sciPlex3_medium_mcf7_fixed"
+
+condition_key: "perturbation"
+cell_type_key: "cell_group"
+batch_key: "pcr_well"
+control_label: "Vehicle"
+treated_label: null
+organism: "human"
+
+run_qc: true
+run_annotation: false
+run_perturbation: true
+run_dynamics: false
+
+annotation_method: "none"
+dynamics_method: "none"
+
+fallback_allowed: false
+server_mode: true
+seed: 42
+
+qc:
+  adaptive: true
+  search_iterations: 50
+  mt_prefixes:
+    human: "MT-"
+    mouse: "mt-"
+  mt_detection:
+    use_var_symbols: true
+    symbol_columns: ["gene_short_name", "gene_symbol", "symbol", "gene_name", "hgnc_symbol"]
+  doublet_detection:
+    method: "scrublet"
+    expected_doublet_rate: 0.06
+  metric_weights:
+    retained_cell_ratio: 0.30
+    retained_gene_ratio: 0.25
+    mt_ratio_control: 0.10
+    n_genes_by_counts_min: 0.10
+    total_counts_min: 0.05
+    group_balance_after_qc: 0.10
+    downstream_deg_usability: 0.10
+  group_qc:
+    enabled: true
+    group_column: "perturbation"
+    control_label: "Vehicle"
+    min_cells_per_group: 10
+    max_imbalance_ratio: 5.0
+
+perturbation:
+  per_drug_mode: true
+  drug_column: "perturbation"
+  dprs_weights:
+    proportion_shift: 0.30
+    deg_intensity: 0.25
+    pathway_activity: 0.20
+    trajectory_shift: 0.15
+    confidence_weight: 0.10
+  deg:
+    method: "wilcoxon"
+    min_log_fold_change: 0.25
+    p_value_threshold: 0.05
+    min_cells_per_group: 10
+  pathway:
+    databases:
+      - "KEGG_2021_Human"
+    enrichment_method: "gseapy"
+  proportion_shift:
+    min_cells_per_type: 20
+    test: "chi_squared"
+
+reporting:
+  formats:
+    - markdown
+    - html
+  include_figures: true
+  include_tables: true

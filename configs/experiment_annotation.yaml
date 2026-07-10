@@ -1,0 +1,42 @@
+# Cell Annotation Benchmark Experiment Configuration
+
+pipeline:
+  name: "scAgent-DPM-annotation-benchmark"
+  description: "Cell type annotation benchmark experiment"
+
+input_path: null
+output_dir: "results/annotation/benchmark"
+
+run_qc: false
+run_annotation: true
+run_perturbation: false
+run_dynamics: false
+
+seed: 42
+server_mode: true
+
+annotation:
+  celltypist:
+    model: "Immune_All_High.pkl"
+    majority_voting: true
+  scgpt:
+    model_path: null
+    batch_size: 64
+  scgpt_kdmt:
+    project_path: null
+    model_weights: null
+
+annotation_methods:
+  - "celltypist"
+  - "scgpt"
+  - "scgpt_kdmt"
+
+evaluation:
+  metrics:
+    - "accuracy"
+    - "macro_f1"
+    - "weighted_f1"
+    - "precision"
+    - "recall"
+  confidence_analysis: true
+  low_confidence_threshold: 0.5

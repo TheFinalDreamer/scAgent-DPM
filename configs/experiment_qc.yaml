@@ -1,0 +1,41 @@
+# QC Benchmark Experiment Configuration
+
+pipeline:
+  name: "scAgent-DPM-qc-benchmark"
+  description: "Adaptive QC benchmark experiment"
+
+input_path: null
+output_dir: "results/qc/benchmark"
+
+run_qc: true
+run_annotation: false
+run_perturbation: false
+run_dynamics: false
+
+seed: 42
+server_mode: true
+
+qc:
+  adaptive: true
+  search_iterations: 100
+  metric_weights:
+    retained_cell_ratio: 0.25
+    retained_gene_ratio: 0.20
+    mt_ratio_control: 0.15
+    n_genes_by_counts_min: 0.15
+    total_counts_min: 0.10
+    doublet_removal: 0.15
+
+# Baseline comparison methods
+qc_baselines:
+  - name: "fixed"
+    params:
+      min_genes: 200
+      min_cells: 3
+      max_mt_pct: 20
+  - name: "scanpy_default"
+    params:
+      min_genes: 200
+      min_cells: 3
+      max_mt_pct: 20
+      min_counts: 1500

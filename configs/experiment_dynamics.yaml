@@ -1,0 +1,42 @@
+# Dynamic State Modeling Experiment Configuration
+
+pipeline:
+  name: "scAgent-DPM-dynamics"
+  description: "Dynamic state modeling experiment"
+
+input_path: null
+output_dir: "results/dynamics"
+
+run_qc: false
+run_annotation: false
+run_perturbation: false
+run_dynamics: true
+
+seed: 42
+server_mode: true
+
+dynamics:
+  pseudotime:
+    method: "scanpy_dpt"
+    root_cell_prior: null
+    n_branchings: 0
+  mamba_lstm:
+    project_path: null
+    model_weights: null
+    sequence_length: 100
+    hidden_dim: 128
+    num_layers: 2
+    dropout: 0.1
+
+dynamics_methods:
+  - "pseudotime"
+  - "mamba_lstm"
+
+evaluation:
+  trajectory_shift_metrics:
+    - "wasserstein_distance"
+    - "kl_divergence"
+    - "earth_mover_distance"
+  stability_metrics:
+    - "rank_correlation"
+    - "transition_consistency"

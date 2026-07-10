@@ -1,0 +1,61 @@
+# scAgent-DPM Demo Configuration
+# Lightweight config for functional testing with synthetic/small data
+
+pipeline:
+  name: "scAgent-DPM-demo"
+  description: "Demo pipeline for functional verification"
+
+input_path: null  # Will use synthetic data if null
+output_dir: "results/demo"
+
+condition_key: "condition"
+batch_key: null
+cell_type_key: "cell_type"
+control_label: "control"
+treated_label: "treated"
+organism: "human"
+
+run_qc: true
+run_annotation: true
+run_perturbation: true
+run_dynamics: true
+
+annotation_method: "celltypist"
+dynamics_method: "pseudotime"
+
+fallback_allowed: true
+server_mode: false
+seed: 42
+
+qc:
+  adaptive: true
+  search_iterations: 10
+  mt_prefixes:
+    human: "MT-"
+    mouse: "mt-"
+
+annotation:
+  celltypist:
+    model: "Immune_All_Low.pkl"
+    majority_voting: true
+
+perturbation:
+  dprs_weights:
+    proportion_shift: 0.30
+    deg_intensity: 0.25
+    pathway_activity: 0.20
+    trajectory_shift: 0.15
+    confidence_weight: 0.10
+  deg:
+    method: "wilcoxon"
+    min_log_fold_change: 0.25
+    p_value_threshold: 0.05
+
+dynamics:
+  pseudotime:
+    method: "scanpy_dpt"
+
+reporting:
+  formats:
+    - markdown
+    - html

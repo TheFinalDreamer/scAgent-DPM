@@ -1,0 +1,61 @@
+# scAgent-DPM Server Configuration
+# Optimized for server-side batch experiments
+
+pipeline:
+  name: "scAgent-DPM-server"
+  description: "Server-side batch experiment configuration"
+
+input_path: "/data/sc/scAgent_DPM/data/input"
+output_dir: "/data/sc/scAgent_DPM/results/server_runs"
+
+condition_key: "condition"
+batch_key: "batch"
+cell_type_key: "cell_type"
+control_label: "control"
+treated_label: "treated"
+organism: "human"
+
+run_qc: true
+run_annotation: true
+run_perturbation: true
+run_dynamics: true
+
+annotation_method: "scgpt_kdmt"
+dynamics_method: "mamba_lstm"
+
+fallback_allowed: false
+server_mode: true
+seed: 42
+
+qc:
+  adaptive: true
+  search_iterations: 100
+  mt_prefixes:
+    human: "MT-"
+    mouse: "mt-"
+  doublet_detection:
+    method: "scrublet"
+    expected_doublet_rate: 0.06
+
+annotation:
+  scgpt_kdmt:
+    project_path: "/data/sc/scGPT-KDMT"
+    model_weights: "/data/sc/scGPT-KDMT/checkpoints/best_model.pt"
+
+perturbation:
+  dprs_weights:
+    proportion_shift: 0.30
+    deg_intensity: 0.25
+    pathway_activity: 0.20
+    trajectory_shift: 0.15
+    confidence_weight: 0.10
+
+dynamics:
+  mamba_lstm:
+    project_path: "/data/sc/scLifeMamba"
+    model_weights: "/data/sc/scLifeMamba/checkpoints/best_model.pt"
+
+reporting:
+  formats:
+    - markdown
+    - html

@@ -1,0 +1,46 @@
+annotation_method: none
+cell_type_key: cell_type
+condition_key: perturbation
+control_label: control
+data_is_pre_normalized: true
+drug_column: perturbation
+dynamics_method: none
+fallback_allowed: false
+input_path: C:\A-KuRuMi\学校专用\论文专用\在写\面向药物干预机制解析的单细胞智能分析体：融合自适应质量控制、基础模型注释与动态状态建模的自动化分析系统\REAL_DATA_EXTENSION\02_processed_data\scpram_smoke.h5ad
+organism: human
+output_dir: C:\A-KuRuMi\学校专用\论文专用\在写\面向药物干预机制解析的单细胞智能分析体：融合自适应质量控制、基础模型注释与动态状态建模的自动化分析系统\REAL_DATA_EXTENSION\04_real_runs\scpram_smoke
+per_condition_mode: true
+per_drug_mode: false
+perturbation:
+  dprs_weights:
+    confidence_weight: 0.1
+    deg_intensity: 0.25
+    pathway_activity: 0.2
+    proportion_shift: 0.3
+    trajectory_shift: 0.15
+  pathway:
+    databases:
+    - KEGG_2021_Human
+    - WikiPathway_2021_Human
+    - GO_Biological_Process_2021
+    min_genes: 5
+    online: true
+pipeline:
+  name: scpram_smoke_validation
+qc:
+  adaptive: true
+  max_mt_pct: 10.0
+  min_cells: 3
+  min_genes: 200
+  search_iterations: 5
+reporting:
+  formats:
+  - markdown
+  - html
+  include_figures: true
+run_annotation: false
+run_dynamics: false
+run_perturbation: true
+run_qc: true
+seed: 42
+server_mode: false

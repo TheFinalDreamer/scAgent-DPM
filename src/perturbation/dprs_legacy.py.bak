@@ -1,0 +1,223 @@
+"""Drug Perturbation Response Score (DPRS) — the core perturbation metric.
+
+DPRS(c) = w1 * ProportionShift(c) + w2 * DEGIntensity(c) + w3 * PathwayActivity(c)
+        + w4 * TrajectoryShift(c) + w5 * ConfidenceWeight(c)
+
+Each component is normalized to [0, 1] before weighting.
+Missing components are recorded as NA and contribute 0 to the score.
+"""
+
+import json
+import logging
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
+import numpy as np
+import pandas as pd
+
+logger = logging.getLogger("scagent_dpm.perturbation.dprs")
+
+
+def compute_dprs(
+    proportion_df: Optional[pd.DataFrame] = None,
+    deg_df: Optional[pd.DataFrame] = None,
+    pathway_df: Optional[pd.DataFrame] = None,
+    trajectory_df: Optional[pd.DataFrame] = None,
+    confidence_weights: Optional[pd.Series] = None,
+    weights: Optional[Dict[str, float]] = None,
+    cell_types: Optional[List[str]] = None,
+) -> Tuple[pd.DataFrame, Dict[str, Any]]:
+    """Compute Drug Perturbation Response Score for each cell type.
+
+    Parameters
+    ----------
+    proportion_df : DataFrame with 'cell_type' and 'abs_shift' columns
+    deg_df : DataFrame with 'cell_type' and DEG statistics columns
+    pathway_df : DataFrame with 'cell_type' and pathway results
+    trajectory_df : DataFrame with trajectory shift data
+    confidence_weights : Series with confidence weight per cell type
+    weights : dict of component weights {proportion_shift, deg_intensity, pathway_activity,
+              trajectory_shift, confidence_weight}
+    cell_types : list of cell types to score
+
+    Returns
+    -------
+    dprs_df : DataFrame with DPRS per cell type
+    metadata : dict with available components and normalization info
+    """
+    if weights is None:
+        weights = {
+            "proportion_shift": 0.30,
+            "deg_intensity": 0.25,
+            "pathway_activity": 0.20,
+            "trajectory_shift": 0.15,
+            "confidence_weight": 0.10,
+        }
+
+    # Collect all cell types
+    all_cts = set()
+    if proportion_df is not None and "cell_type" in proportion_df.columns:
+        all_cts.update(proportion_df["cell_type"].unique())
+    if deg_df is not None and "cell_type" in deg_df.columns:
+        all_cts.update(deg_df["cell_type"].unique())
+    if cell_types:
+        all_cts.update(cell_types)
+    all_cts = sorted(all_cts)
+
+    available_components = []
+    missing_components = []
+
+    # Component 1: Proportion Shift (normalized)
+    prop_scores = {}
+    if proportion_df is not None and not proportion_df.empty and "abs_shift" in proportion_df.columns:
+        raw = proportion_df.set_index("cell_type")["abs_shift"]
+        prop_scores = _normalize_component(raw, "proportion_shift")
+        available_components.append("proportion_shift")
+    else:
+        missing_components.append("proportion_shift")
+
+    # Component 2: DEG Intensity
+    try:
+        from .deg import compute_deg_intensity
+        _deg_available = True
+    except ImportError:
+        _deg_available = False
+    deg_scores = {}
+    if _deg_available and deg_df is not None and not deg_df.empty:
+        raw = {}
+        for ct in all_cts:
+            raw[ct] = compute_deg_intensity(deg_df, ct)
+        raw_series = pd.Series(raw)
+        deg_scores = _normalize_component(raw_series, "deg_intensity")
+        available_components.append("deg_intensity")
+    else:
+        missing_components.append("deg_intensity")
+
+    # Component 3: Pathway Activity
+    try:
+        from .pathway import compute_pathway_activity
+        _pathway_available = True
+    except ImportError:
+        _pathway_available = False
+    pathway_scores = {}
+    if _pathway_available and pathway_df is not None and not pathway_df.empty:
+        raw = {}
+        for ct in all_cts:
+            raw[ct] = compute_pathway_activity(pathway_df, ct)
+        raw_series = pd.Series(raw)
+        pathway_scores = _normalize_component(raw_series, "pathway_activity")
+        available_components.append("pathway_activity")
+    else:
+        missing_components.append("pathway_activity")
+
+    # Component 4: Trajectory Shift
+    traj_scores = {}
+    if trajectory_df is not None and not trajectory_df.empty:
+        if "trajectory_shift" in trajectory_df.columns:
+            raw = trajectory_df.set_index("cell_type")["trajectory_shift"]
+        elif "shift_score" in trajectory_df.columns:
+            raw = trajectory_df.set_index("cell_type")["shift_score"]
+        else:
+            raw = pd.Series(0.0, index=all_cts)
+        traj_scores = _normalize_component(raw, "trajectory_shift")
+        available_components.append("trajectory_shift")
+    else:
+        missing_components.append("trajectory_shift")
+
+    # Component 5: Confidence Weight
+    conf_scores = {}
+    if confidence_weights is not None and len(confidence_weights) > 0:
+        conf_scores = _normalize_component(confidence_weights, "confidence_weight")
+        available_components.append("confidence_weight")
+    else:
+        missing_components.append("confidence_weight")
+
+    # Compute weighted DPRS
+    dprs_rows = []
+    for ct in all_cts:
+        score = 0.0
+        effective_weight_sum = 0.0
+
+        if ct in prop_scores:
+            w = weights.get("proportion_shift", 0.30)
+            score += w * prop_scores[ct]
+            effective_weight_sum += w
+        if ct in deg_scores:
+            w = weights.get("deg_intensity", 0.25)
+            score += w * deg_scores[ct]
+            effective_weight_sum += w
+        if ct in pathway_scores:
+            w = weights.get("pathway_activity", 0.20)
+            score += w * pathway_scores[ct]
+            effective_weight_sum += w
+        if ct in traj_scores:
+            w = weights.get("trajectory_shift", 0.15)
+            score += w * traj_scores[ct]
+            effective_weight_sum += w
+        if ct in conf_scores:
+            w = weights.get("confidence_weight", 0.10)
+            score += w * conf_scores[ct]
+            effective_weight_sum += w
+
+        # Normalize by effective weights used
+        normalized_score = score / effective_weight_sum if effective_weight_sum > 0 else 0.0
+
+        dprs_rows.append({
+            "cell_type": ct,
+            "dprs_score": round(normalized_score, 6),
+            "proportion_shift_component": round(prop_scores.get(ct, 0.0), 6),
+            "deg_intensity_component": round(deg_scores.get(ct, 0.0), 6),
+            "pathway_activity_component": round(pathway_scores.get(ct, 0.0), 6),
+            "trajectory_shift_component": round(traj_scores.get(ct, 0.0), 6),
+            "confidence_weight_component": round(conf_scores.get(ct, 0.0), 6),
+        })
+
+    dprs_df = pd.DataFrame(dprs_rows)
+    if not dprs_df.empty and "dprs_score" in dprs_df.columns:
+        dprs_df = dprs_df.sort_values("dprs_score", ascending=False)
+
+    metadata = {
+        "n_cell_types_scored": len(all_cts),
+        "available_components": available_components,
+        "missing_components": missing_components,
+        "weights_used": weights,
+        "weights_normalized": _normalize_weights(weights, available_components),
+        "top_drug_sensitive": dprs_df.head(5)["cell_type"].tolist() if not dprs_df.empty else [],
+    }
+
+    logger.info(f"DPRS computed for {len(all_cts)} cell types, "
+                f"available components: {available_components}, "
+                f"missing: {missing_components}")
+    return dprs_df, metadata
+
+
+def _normalize_component(series: pd.Series, name: str) -> Dict[str, float]:
+    """Normalize component scores to [0, 1] using min-max scaling."""
+    s = series.dropna()
+    if len(s) == 0 or s.max() == s.min():
+        return {k: 0.5 for k in series.index}
+    normalized = (s - s.min()) / (s.max() - s.min())
+    return normalized.to_dict()
+
+
+def _normalize_weights(weights: Dict[str, float], available: List[str]) -> Dict[str, float]:
+    """Renormalize weights to sum to 1 based on available components."""
+    effective = {k: v for k, v in weights.items() if k in available}
+    total = sum(effective.values())
+    if total == 0:
+        return weights
+    return {k: v / total for k, v in effective.items()}
+
+
+def identify_drug_sensitive_cell_types(
+    dprs_df: pd.DataFrame,
+    threshold_percentile: float = 75.0,
+) -> pd.DataFrame:
+    """Identify cell types with high DPRS (drug-sensitive populations)."""
+    if dprs_df.empty:
+        return dprs_df
+    threshold = np.percentile(dprs_df["dprs_score"], threshold_percentile)
+    sensitive = dprs_df[dprs_df["dprs_score"] >= threshold].copy()
+    sensitive["is_drug_sensitive"] = True
+    logger.info(f"Identified {len(sensitive)} drug-sensitive cell types (threshold={threshold:.4f})")
+    return sensitive

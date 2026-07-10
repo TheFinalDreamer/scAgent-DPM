@@ -1,0 +1,178 @@
+"""Markdown report generation for scAgent-DPM."""
+
+import json
+import logging
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict
+
+logger = logging.getLogger("scagent_dpm.reporting.markdown")
+
+
+def generate_markdown_report(results: Dict[str, Any], output_dir: str) -> Path:
+    """Generate a structured Markdown report from pipeline results."""
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    sections = []
+    sections.append(_header())
+    sections.append(_data_summary(results))
+    sections.append(_qc_summary(results))
+    sections.append(_annotation_summary(results))
+    sections.append(_perturbation_summary(results))
+    sections.append(_dynamics_summary(results))
+    sections.append(_dprs_summary(results))
+    sections.append(_disclaimer(results))
+    sections.append(_footer())
+
+    report_text = "\n\n".join(sections)
+    report_path = output_dir / "report.md"
+    with open(report_path, "w", encoding="utf-8") as f:
+        f.write(report_text)
+
+    logger.info(f"Markdown report saved to {report_path}")
+    return report_path
+
+
+def _header() -> str:
+    return f"""# scAgent-DPM Pipeline Report
+
+**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+**System:** scAgent-DPM v0.1.0 — single-cell Agent for Drug Perturbation Mechanism discovery
+
+---
+
+## Run Summary
+
+"""
+
+
+def _data_summary(results: Dict[str, Any]) -> str:
+    return """## 1. Data Ingestion
+
+Data loaded and inspected. See `data_summary.json` for full details.
+"""
+
+
+def _qc_summary(results: Dict[str, Any]) -> str:
+    qc = results.get("qc", {})
+    method = qc.get("qc_method", "fixed_qc")
+    best_score = qc.get("best_score", "N/A")
+    cells_retained = qc.get("cells_after", "N/A")
+    return f"""## 2. Quality Control
+
+QC completed using **{method}** method (best score: {best_score}, cells retained: {cells_retained}).
+See `qc_report.json` for full statistics and parameter search history.
+"""
+
+
+def _annotation_summary(results: Dict[str, Any]) -> str:
+    anno = results.get("annotation", {})
+    method = anno.get("method", "unknown")
+    is_fb = anno.get("is_fallback", False)
+    fb_warn = ""
+    if is_fb:
+        fb_warn = "\n\n**WARNING: Annotation results are MOCK/FALLBACK — NOT for publication.**"
+    return f"""## 3. Cell Type Annotation
+
+- **Method:** {method}
+- **Fallback:** {is_fb}
+{fb_warn}
+
+Output files:
+- `cell_annotation.csv`
+- `prediction_confidence.csv`
+- `low_confidence_cells.csv`
+"""
+
+
+def _perturbation_summary(results: Dict[str, Any]) -> str:
+    deg = results.get("deg_df")
+    prop = results.get("proportion_df")
+    pathway = results.get("pathway_df")
+
+    n_deg = len(deg) if deg is not None else 0
+    n_prop = len(prop) if prop is not None else 0
+    n_path = len(pathway) if pathway is not None else 0
+
+    return f"""## 4. Drug Perturbation Analysis
+
+- DEGs detected: {n_deg}
+- Cell types with proportion shift: {n_prop}
+- Pathway enrichments: {n_path}
+
+Output files:
+- `deg_results.csv`
+- `proportion_shift.csv`
+- `pathway_results.csv`
+"""
+
+
+def _dynamics_summary(results: Dict[str, Any]) -> str:
+    dyn = results.get("dynamics", {})
+    if isinstance(dyn, dict):
+        method = dyn.get("method", "pseudotime")
+        is_fb = dyn.get("is_fallback", False)
+    else:
+        method = "unknown"
+        is_fb = False
+
+    fb_warn = ""
+    if is_fb:
+        fb_warn = "\n\n**WARNING: Dynamic modeling results are PSEUDOTIME FALLBACK — NOT for publication as Mamba-LSTM result.**"
+
+    return f"""## 5. Dynamic State Modeling
+
+- **Method:** {method}
+- **Fallback:** {is_fb}
+{fb_warn}
+
+Output files:
+- `pseudotime.csv`
+"""
+
+
+def _dprs_summary(results: Dict[str, Any]) -> str:
+    dprs_meta = results.get("dprs_meta", {})
+    available = dprs_meta.get("available_components", [])
+    missing = dprs_meta.get("missing_components", [])
+    top = dprs_meta.get("top_drug_sensitive", [])
+
+    return f"""## 6. Drug Perturbation Response Score (DPRS)
+
+- **Available components:** {', '.join(available) if available else 'none'}
+- **Missing components:** {', '.join(missing) if missing else 'none'}
+- **Top drug-sensitive cell types:** {', '.join(top) if top else 'none'}
+
+Output files:
+- `dprs_scores.csv`
+- `drug_sensitive_cell_types.csv`
+- `perturbation_summary.json`
+"""
+
+
+def _disclaimer(results: Dict[str, Any]) -> str:
+    has_fallback = False
+    for key in ["annotation", "dynamics"]:
+        val = results.get(key, {})
+        if isinstance(val, dict) and val.get("is_fallback"):
+            has_fallback = True
+            break
+
+    if has_fallback:
+        return """## DISCLAIMER
+
+**This report contains FALLBACK/MOCK results.** Components that could not execute
+with real models or data were replaced with interface-test predictions. These results
+MUST NOT be interpreted as scientific findings or included in publication materials.
+"""
+
+    return ""
+
+
+def _footer() -> str:
+    return """---
+
+*Report generated by scAgent-DPM v0.1.0*
+"""

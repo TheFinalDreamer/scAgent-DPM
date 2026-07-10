@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use scAgent-DPM, please cite the following."
+title: "scAgent-DPM: An Agentic Workflow for Reproducible Single-cell Drug Perturbation Analysis"
+authors:
+  - family-names: "[To be filled]"
+    given-names: "[To be filled]"
+version: 1.0.0
+date-released: 2026-07-10
+url: "https://github.com/TheFinalDreamer/scAgent-DPM"
+repository-code: "https://github.com/TheFinalDreamer/scAgent-DPM"
+abstract: "An agentic workflow system for single-cell drug perturbation analysis integrating adaptive quality control, structured pathway enrichment, component-aware DPRS, and reproducible execution."
+keywords:
+  - single-cell RNA-seq
+  - drug perturbation
+  - workflow reproducibility
+  - pathway enrichment
+  - differential expression
+  - bioinformatics
+license: MIT
+type: software

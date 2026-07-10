@@ -1,0 +1,78 @@
+"""Pathway enrichment analysis for perturbation DEGs."""
+
+import logging
+from typing import Any, Dict, List, Optional
+
+import numpy as np
+import pandas as pd
+
+logger = logging.getLogger("scagent_dpm.perturbation.pathway")
+
+
+def run_pathway_enrichment(
+    deg_df: pd.DataFrame,
+    gene_col: str = "names",
+    cell_type_col: str = "cell_type",
+    databases: Optional[List[str]] = None,
+    organism: str = "human",
+) -> pd.DataFrame:
+    """Run pathway enrichment for DEGs per cell type.
+
+    Uses gseapy if available; otherwise returns empty placeholder.
+    """
+    if databases is None:
+        databases = ["KEGG_2019_Human", "WikiPathway_2019_Human", "GO_Biological_Process_2021"]
+
+    try:
+        import gseapy as gp
+    except ImportError:
+        logger.warning("gseapy not installed — pathway enrichment skipped")
+        return _empty_pathway_df()
+
+    all_results = []
+    cell_types = deg_df[cell_type_col].unique()
+
+    for ct in cell_types:
+        genes = deg_df[deg_df[cell_type_col] == ct][gene_col].dropna().unique().tolist()
+        if len(genes) < 5:
+            continue
+
+        for db in databases:
+            try:
+                enr = gp.enrichr(gene_list=genes, gene_sets=db, organism=organism, outdir=None)
+                if enr.results is not None and not enr.results.empty:
+                    res = enr.results.copy()
+                    res["cell_type"] = ct
+                    res["database"] = db
+                    all_results.append(res)
+            except Exception as e:
+                logger.warning(f"Pathway enrichment failed for {ct} in {db}: {e}")
+
+    if not all_results:
+        return _empty_pathway_df()
+
+    return pd.concat(all_results, ignore_index=True)
+
+
+def compute_pathway_activity(pathway_df: pd.DataFrame, cell_type: str) -> float:
+    """Compute pathway activity score for a cell type.
+
+    Pathway activity = sum(-log10(padj)) for top N pathways.
+    """
+    subset = pathway_df[pathway_df["cell_type"] == cell_type]
+    if subset.empty:
+        return 0.0
+    if "Adjusted P-value" in subset.columns:
+        padj_col = "Adjusted P-value"
+    elif "P-value" in subset.columns:
+        padj_col = "P-value"
+    else:
+        return float(len(subset))
+    top_n = min(20, len(subset))
+    top = subset.nsmallest(top_n, padj_col)
+    values = top[padj_col].clip(lower=1e-300)
+    return float(np.sum(-np.log10(values)))
+
+
+def _empty_pathway_df() -> pd.DataFrame:
+    return pd.DataFrame(columns=["cell_type", "database", "Term", "Overlap", "P-value", "Adjusted P-value"])

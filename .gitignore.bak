@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Large data files
+*.h5ad
+data/real/
+results/local_runs/
+results/real_experiments/
+
+# Logs
+logs/
+*.log
+
+# Temp
+tmp/
+*.tmp
+*.bak
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project-specific
+FINAL_LOCAL/
+FINAL_SUBMISSION_WORKSPACE/
+REAL_DATA_EXTENSION/
+REALITY_AUDIT/
+90_Archive/
+archive/

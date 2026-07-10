@@ -1,0 +1,44 @@
+# Drug Perturbation Response Analysis Experiment Configuration
+
+pipeline:
+  name: "scAgent-DPM-perturbation"
+  description: "Drug perturbation response analysis experiment"
+
+input_path: null
+output_dir: "results/perturbation"
+
+run_qc: false
+run_annotation: false
+run_perturbation: true
+run_dynamics: false
+
+seed: 42
+server_mode: true
+organism: "human"
+
+perturbation:
+  dprs_weights:
+    proportion_shift: 0.30
+    deg_intensity: 0.25
+    pathway_activity: 0.20
+    trajectory_shift: 0.15
+    confidence_weight: 0.10
+  deg:
+    method: "wilcoxon"
+    min_log_fold_change: 0.25
+    p_value_threshold: 0.05
+    min_cells_per_group: 10
+  pathway:
+    databases:
+      - "KEGG_2019_Human"
+      - "WikiPathway_2019_Human"
+      - "GO_Biological_Process_2021"
+    enrichment_method: "gseapy"
+  proportion_shift:
+    min_cells_per_type: 20
+    test: "chi_squared"
+
+reporting:
+  formats:
+    - markdown
+    - html

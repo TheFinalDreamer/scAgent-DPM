@@ -1,0 +1,106 @@
+# scAgent-DPM Default Configuration
+# Used for full pipeline runs on real datasets
+
+pipeline:
+  name: "scAgent-DPM-full"
+  description: "Full drug perturbation mechanism discovery pipeline"
+
+# --- Input / Output ---
+input_path: null  # Must be provided at runtime
+output_dir: "results/default_run"
+
+# --- Data ---
+condition_key: "condition"
+batch_key: null
+cell_type_key: "cell_type"
+control_label: "control"
+treated_label: "treated"
+organism: "human"  # human | mouse
+
+# --- Module switches ---
+run_qc: true
+run_annotation: true
+run_perturbation: true
+run_dynamics: true
+
+# --- Methods ---
+annotation_method: "scgpt_kdmt"  # celltypist | scgpt | scgpt_kdmt
+dynamics_method: "mamba_lstm"    # pseudotime | mamba_lstm
+
+# --- Fallback ---
+fallback_allowed: false  # If true, missing models fall back to mock/simplified
+
+# --- Server ---
+server_mode: false
+
+# --- Reproducibility ---
+seed: 42
+
+# --- QC Parameters ---
+qc:
+  adaptive: true
+  search_iterations: 50
+  metric_weights:
+    retained_cell_ratio: 0.25
+    retained_gene_ratio: 0.20
+    mt_ratio_control: 0.15
+    n_genes_by_counts_min: 0.15
+    total_counts_min: 0.10
+    doublet_removal: 0.15
+  mt_prefixes:
+    human: "MT-"
+    mouse: "mt-"
+  doublet_detection:
+    method: "scrublet"
+    expected_doublet_rate: 0.06
+
+# --- Annotation Parameters ---
+annotation:
+  celltypist:
+    model: "Immune_All_High.pkl"
+    majority_voting: true
+  scgpt:
+    model_path: null
+    batch_size: 64
+  scgpt_kdmt:
+    project_path: null
+    model_weights: null
+    use_kdmt: true
+
+# --- Perturbation Parameters ---
+perturbation:
+  dprs_weights:
+    proportion_shift: 0.30
+    deg_intensity: 0.25
+    pathway_activity: 0.20
+    trajectory_shift: 0.15
+    confidence_weight: 0.10
+  deg:
+    method: "wilcoxon"
+    min_log_fold_change: 0.25
+    p_value_threshold: 0.05
+  pathway:
+    databases:
+      - "KEGG_2019_Human"
+      - "WikiPathway_2019_Human"
+      - "GO_Biological_Process_2021"
+
+# --- Dynamics Parameters ---
+dynamics:
+  pseudotime:
+    method: "scanpy_dpt"
+    root_cell_prior: null
+  mamba_lstm:
+    project_path: null
+    model_weights: null
+    sequence_length: 100
+    hidden_dim: 128
+    num_layers: 2
+
+# --- Reporting ---
+reporting:
+  formats:
+    - markdown
+    - html
+  include_figures: true
+  include_tables: true
