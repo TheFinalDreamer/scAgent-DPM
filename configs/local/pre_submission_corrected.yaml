@@ -1,0 +1,57 @@
+# scAgent-DPM canonical primary run configuration.
+#
+# This is the configuration used for the scPRAM PBMC primary analysis reported in
+# the CMPB manuscript (pipeline name: scpram_corrected_preprocessing).
+#
+# Matrix state: processed log1p. The workflow detects this automatically and does
+# NOT re-apply normalize_total + log1p.
+#
+# Paths are relative placeholders. Place the downloaded input file at the path in
+# `input_path` (see REPRODUCING.md for how to obtain it).
+
+annotation_method: none
+cell_type_key: cell_type
+condition_key: perturbation
+control_label: control
+drug_column: perturbation
+dynamics_method: none
+fallback_allowed: false
+input_matrix_state: log_normalized
+input_path: data/processed/scpram_medium.h5ad
+organism: human
+output_dir: results/scpram_corrected_preprocessing
+per_condition_mode: true
+per_drug_mode: false
+perturbation:
+  dprs_weights:
+    confidence_weight: 0.1
+    deg_intensity: 0.25
+    pathway_activity: 0.2
+    proportion_shift: 0.3
+    trajectory_shift: 0.15
+  pathway:
+    databases:
+    - KEGG_2021_Human
+    - WikiPathway_2021_Human
+    - GO_Biological_Process_2021
+    min_genes: 5
+    online: true
+pipeline:
+  name: scpram_corrected_preprocessing
+qc:
+  adaptive: true
+  max_mt_pct: 10.0
+  min_cells: 3
+  min_genes: 200
+  search_iterations: 20
+reporting:
+  formats:
+  - markdown
+  - html
+  include_figures: true
+run_annotation: false
+run_dynamics: false
+run_perturbation: true
+run_qc: true
+seed: 42
+server_mode: false

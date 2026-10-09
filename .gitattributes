@@ -1,0 +1,19 @@
+# Byte-exact storage for the source files whose SHA256 is recorded as provenance
+# evidence for the CMPB manuscript (CMPB-D-26-07112).
+#
+# `-text` disables all end-of-line conversion, so the bytes stored in Git and the
+# bytes checked out are identical on every platform. This is what makes the
+# documented hashes in REPRODUCING.md verifiable after a fresh clone, on Windows
+# and on Linux alike, with any core.autocrlf setting.
+#
+# Some of these files carry CRLF and some LF as they were evaluated; preserving the
+# exact bytes is deliberate and must not be "normalised".
+
+src/data/preprocessing.py  -text
+src/agent/executor.py      -text
+src/qc/adaptive_qc.py      -text
+src/qc/qc_metrics.py       -text
+src/perturbation/deg.py    -text
+src/perturbation/dprs.py   -text
+src/perturbation/pathway.py -text
+src/utils/system.py        -text

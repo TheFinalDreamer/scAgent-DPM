@@ -1,0 +1,103 @@
+# scAgent-DPM Configuration for External Validation: sciplex4
+# All parameters frozen identically to canonical scPRAM run unless marked with [EXTERNAL-SPECIFIC]
+
+pipeline:
+  name: "scAgent-DPM-external-sciplex4"
+  description: "External validation on sciplex4 drug perturbation data"
+
+# --- Input / Output ---
+input_path: "03_external_validation/03_processed_data/sciplex4/sciplex4_scagent_compatible.h5ad"
+output_dir: "03_external_validation/05_runs/sciplex4"
+
+# --- Data ---
+condition_key: "condition"
+batch_key: "batch"
+cell_type_key: "cell_type"
+control_label: "control"
+treated_label: "treated"
+organism: "human"
+
+# --- Module switches ---
+run_qc: true
+run_annotation: false    # [EXTERNAL-SPECIFIC] scGPT/CellTypist checkpoints not available for cancer lines
+run_perturbation: true
+run_dynamics: false      # [EXTERNAL-SPECIFIC] No temporal data
+
+# --- Methods ---
+annotation_method: "scgpt_kdmt"   # skipped per module switch
+dynamics_method: "pseudotime"     # skipped per module switch
+
+# --- Fallback ---
+fallback_allowed: false
+
+# --- Server ---
+server_mode: false
+
+# --- Reproducibility ---
+seed: 42
+
+# --- QC Parameters (IDENTICAL to canonical) ---
+qc:
+  adaptive: true
+  search_iterations: 20
+  metric_weights:
+    retained_cell_ratio: 0.40
+    retained_gene_ratio: 0.35
+    mt_ratio_control: 0.0          # will be auto-excluded if MT genes unavailable
+  mt_prefixes:
+    human: "MT-"
+    mouse: "mt-"
+  doublet_detection:
+    method: "scrublet"
+    expected_doublet_rate: 0.06
+
+# --- Annotation Parameters (skipped) ---
+annotation:
+  celltypist:
+    model: "Immune_All_High.pkl"
+    majority_voting: true
+  scgpt:
+    model_path: null
+    batch_size: 64
+  scgpt_kdmt:
+    project_path: null
+    model_weights: null
+    use_kdmt: true
+
+# --- Perturbation Parameters (IDENTICAL to canonical) ---
+perturbation:
+  dprs_weights:
+    proportion_shift: 0.30
+    deg_intensity: 0.25
+    pathway_activity: 0.20
+    trajectory_shift: 0.15
+    confidence_weight: 0.10
+  deg:
+    method: "wilcoxon"
+    min_log_fold_change: 0.25
+    p_value_threshold: 0.05
+  pathway:
+    databases:
+      - "KEGG_2021_Human"
+      - "WikiPathway_2021_Human"
+      - "GO_Biological_Process_2021"
+
+# --- Dynamics Parameters (skipped) ---
+dynamics:
+  pseudotime:
+    method: "scanpy_dpt"
+    root_cell_prior: null
+  mamba_lstm:
+    project_path: null
+    model_weights: null
+    sequence_length: 100
+    hidden_dim: 128
+    num_layers: 2
+
+# --- Reporting (IDENTICAL to canonical) ---
+reporting:
+  formats:
+    - markdown
+    - html
+  include_figures: true
+  include_tables: true

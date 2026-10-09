@@ -340,13 +340,24 @@ class PipelineExecutor:
     def _prepare_deg_adata(self) -> ann.AnnData:
         """Prepare log-normalized full-gene AnnData for DEG analysis.
 
-        Uses adata.raw (raw counts) → normalize_total → log1p on ALL genes.
-        This ensures DEG uses log-normalized data on the full gene set, not just HVGs.
+        Uses adata.raw to access the full-gene matrix. If the input was pre-normalized
+        (log1p already applied by data source), the raw copy is used directly. Otherwise,
+        normalize_total + log1p is applied to raw counts.
         """
         if self.adata.raw is not None:
             deg_adata = self.adata.raw.to_adata()
-            sc.pp.normalize_total(deg_adata, target_sum=1e4)
-            sc.pp.log1p(deg_adata)
+            # Check if .raw contains pre-normalized data (max < 20, non-integer)
+            import numpy as _np
+            if hasattr(deg_adata.X, 'data'):
+                _d = deg_adata.X.data
+            else:
+                _d = deg_adata.X.toarray().flatten()
+            _is_log_norm = (_d.max() < 20) and (_np.mean(_np.abs(_d - _np.round(_d)) < 1e-6) < 0.1)
+            if not _is_log_norm:
+                sc.pp.normalize_total(deg_adata, target_sum=1e4)
+                sc.pp.log1p(deg_adata)
+            else:
+                logger.info("DEG data: using pre-normalized full-gene matrix (skipping normalize_total+log1p)")
             # Copy obs annotations from processed adata
             for col in self.adata.obs.columns:
                 if col in self.adata.obs.columns:

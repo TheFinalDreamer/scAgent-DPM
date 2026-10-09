@@ -1,0 +1,86 @@
+pipeline:
+  name: "scAgent-DPM-external-sciplex3-K562"
+  description: "External validation on sciplex3 K562 subset (5 drugs + control, 10uM)"
+
+input_path: "03_external_validation/03_processed_data/sciplex3/sciplex3_K562_5drugs_10uM.h5ad"
+output_dir: "03_external_validation/05_runs/sciplex3_K562"
+
+condition_key: "condition"
+batch_key: "batch"
+cell_type_key: "cell_type"
+control_label: "control"
+treated_label: "treated"
+organism: "human"
+
+run_qc: true
+run_annotation: false
+run_perturbation: true
+run_dynamics: false
+
+annotation_method: "scgpt_kdmt"
+dynamics_method: "pseudotime"
+fallback_allowed: false
+server_mode: false
+
+seed: 42
+
+qc:
+  adaptive: true
+  search_iterations: 20
+  metric_weights:
+    retained_cell_ratio: 0.40
+    retained_gene_ratio: 0.35
+    mt_ratio_control: 0.0
+  mt_prefixes:
+    human: "MT-"
+    mouse: "mt-"
+  doublet_detection:
+    method: "scrublet"
+    expected_doublet_rate: 0.06
+
+annotation:
+  celltypist:
+    model: "Immune_All_High.pkl"
+    majority_voting: true
+  scgpt:
+    model_path: null
+    batch_size: 64
+  scgpt_kdmt:
+    project_path: null
+    model_weights: null
+    use_kdmt: true
+
+perturbation:
+  dprs_weights:
+    proportion_shift: 0.30
+    deg_intensity: 0.25
+    pathway_activity: 0.20
+    trajectory_shift: 0.15
+    confidence_weight: 0.10
+  deg:
+    method: "wilcoxon"
+    min_log_fold_change: 0.25
+    p_value_threshold: 0.05
+  pathway:
+    databases:
+      - "KEGG_2021_Human"
+      - "WikiPathway_2021_Human"
+      - "GO_Biological_Process_2021"
+
+dynamics:
+  pseudotime:
+    method: "scanpy_dpt"
+    root_cell_prior: null
+  mamba_lstm:
+    project_path: null
+    model_weights: null
+    sequence_length: 100
+    hidden_dim: 128
+    num_layers: 2
+
+reporting:
+  formats:
+    - markdown
+    - html
+  include_figures: true
+  include_tables: true

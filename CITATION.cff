@@ -1,20 +1,53 @@
 cff-version: 1.2.0
-message: "If you use scAgent-DPM, please cite the following."
-title: "scAgent-DPM: An Agentic Workflow for Reproducible Single-cell Drug Perturbation Analysis"
+message: "If you use scAgent-DPM, please cite the software release and the accompanying manuscript."
+title: "scAgent-DPM: A Domain-aware and Auditable Workflow for Single-cell Perturbation Analysis"
 authors:
-  - family-names: "[To be filled]"
-    given-names: "[To be filled]"
-version: 1.0.0
-date-released: 2026-07-10
+  # Title, author order, affiliations and corresponding author follow the current CMPB
+  # revised submission for manuscript CMPB-D-26-07112.
+  # NOTE: the local submission/main.tex on the analysis machine is an EARLIER draft and
+  # carries a different title; it must not be used as the source of record for this file.
+  - family-names: "Du"
+    given-names: "Wendong"
+    affiliation: "School of Computer Science and Artificial Intelligence, South-Central Minzu University, Wuhan 430074, China"
+  - family-names: "Mao"
+    given-names: "Tengyue"
+    affiliation: "School of Computer Science and Artificial Intelligence, South-Central Minzu University, Wuhan 430074, China"
+  - family-names: "Xiong"
+    given-names: "Wei"
+    affiliation: "School of Computer Science and Artificial Intelligence, South-Central Minzu University, Wuhan 430074, China"
+  - family-names: "Chen"
+    given-names: "Lvyi"
+    affiliation: "School of Pharmaceutical Sciences, South-Central Minzu University, Wuhan 430074, China"
+  - family-names: "Liu"
+    given-names: "Cong"
+    affiliation: "School of Pharmaceutical Sciences, South-Central Minzu University, Wuhan 430074, China"
+contact:
+  - family-names: "Mao"
+    given-names: "Tengyue"
+    affiliation: "School of Computer Science and Artificial Intelligence, South-Central Minzu University, Wuhan 430074, China"
+version: 1.1.0
+date-released: 2026-10-09
 url: "https://github.com/TheFinalDreamer/scAgent-DPM"
 repository-code: "https://github.com/TheFinalDreamer/scAgent-DPM"
-abstract: "An agentic workflow system for single-cell drug perturbation analysis integrating adaptive quality control, structured pathway enrichment, component-aware DPRS, and reproducible execution."
+abstract: >-
+  scAgent-DPM is a rule-based, domain-aware workflow for reproducible single-cell
+  perturbation analysis. It orchestrates input validation and schema harmonization,
+  matrix-state-aware preprocessing, metric-aware adaptive quality control,
+  per-cell-type differential expression with Wilcoxon and Benjamini-Hochberg
+  correction, structured pathway enrichment with explicit status tracking, and a
+  component-aware Drug Perturbation Response Score (DPRS) that records unavailable
+  components explicitly rather than imputing them. The workflow is an orchestration
+  layer, not a predictive perturbation-response model, and contains no language model.
+  This release is a curated public snapshot of the canonical source and configurations
+  used for the associated CMPB manuscript (CMPB-D-26-07112); it is not the original
+  experimental commit, as the experimental working tree was not under version control.
 keywords:
   - single-cell RNA-seq
-  - drug perturbation
+  - perturbation analysis
   - workflow reproducibility
   - pathway enrichment
   - differential expression
+  - quality control
   - bioinformatics
 license: MIT
 type: software

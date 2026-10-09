@@ -73,6 +73,23 @@ def run_adaptive_qc(
     n_before = adata.n_obs
     g_before = adata.n_vars
 
+    # Detect MT metric availability
+    mt_available = False
+    if "pct_counts_mt" in adata.obs.columns:
+        mt_vals = adata.obs["pct_counts_mt"].values
+        if mt_vals.max() > 0:
+            mt_available = True
+    if not mt_available:
+        logger.info("MT metric unavailable: pct_counts_mt is zero or missing. Excluding from QC objective.")
+        # Remove MT weight and renormalize
+        if metric_weights is None:
+            metric_weights = dict(_default_weights)
+        metric_weights.pop("mt_ratio_control", None)
+        total_w = sum(metric_weights.values())
+        if total_w > 0:
+            metric_weights = {k: v / total_w for k, v in metric_weights.items()}
+        logger.info(f"Renormalized QC weights (MT excluded): {metric_weights}")
+
     rng = np.random.default_rng(42)
     best_score = -np.inf
     best_params = {}
